@@ -64,7 +64,3 @@ You are a helper assistant
 
 **Answer:** 9.8 is greater than 9.11.
 ```
-
-## Recommendation
-
-- Use it in the VSCode terminal for the best experience.
