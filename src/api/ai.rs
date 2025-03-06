@@ -53,7 +53,6 @@ impl DeepseekAi {
             .json::<serde_json::Value>()
             .await
             .context("Failed to parse response from Deepseek API")?;
-        print!("{:?}", &response_json);
 
         let content = extract_field(&response_json["choices"][0], &["message", "content"]).unwrap();
         let reasoning = extract_field(&response_json["choices"][0], &["message", "reasoning_content"]).unwrap();
