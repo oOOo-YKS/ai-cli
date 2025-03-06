@@ -1,6 +1,6 @@
 # AI-CLI
 
-A command line tool to chat with Deepseek AI. Conversations will be presented in a markdown file.
+A command line tool to chat with Deepseek AI. Conversations are presented in a markdown file. It is recommended to use it with VSCode or any other editor that provides markdown rendering and an integrated terminal.
 
 ## Features
 
