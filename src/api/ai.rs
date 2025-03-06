@@ -63,38 +63,40 @@ impl DeepseekAi {
     }
 }
 
-const SAMPLE_JSON: &str = r#"{
-    "choices": [{
-        "finish_reason": "stop",
-        "index": 0,
-        "logprobs": null,
-        "message": {
-                "content": "**9.8 is bigger than 9.11.**\n\n### Explanation:\n1. **Compare the whole numbers first:**  \n   Both numbers have the same whole number part (**9**), so we compare the decimals.\n\n2. **Equalize decimal places for clarity:**  \n   - \\( 9.8 = 9.80 \\) (adding a zero to match two decimal places).  \n   - Now compare **9.80** vs. **9.11**.\n\n3. **Compare tenths place:**  \n   - \\( 8 \\) (in 9.80) is greater than \\( 1 \\) (in 9.11).  \n   - **No need to check further digits** once a larger digit is found.\n\n### Why this works:\n- **Decimal places matter:**  \n  \\( 9.8 = 9 + \\frac{8}{10} \\), while \\( 9.11 = 9 + \\frac{11}{100} \\).  \n  Since \\( \\frac{8}{10} = \\frac{80}{100} \\), \\( 80/100 > 11/100 \\).\n\n### Common confusion:\n- If \\( 9.8 \\) were mistakenly written as \\( 9.08 \\), then \\( 9.11 \\) would be larger. But \\( 9.8 \\) is **not** \\( 9.08 \\).  \n\nLet me know if you'd like further clarification! 😊", 
-                "reasoning_content": "Okay, the user is asking which number is bigger between 9.11 and 9.8. Let me think about how to approach this.\n\nFirst, I know that comparing decimals can sometimes be tricky because of the different number of decimal places. The user might be confused by the two digits after the decimal in 9.11 versus the single digit in 9.8. \n\nI should start by explaining that to compare them, it's helpful to make sure both numbers have the same number of decimal places. So, 9.8 can be written as 9.80. That way, both numbers have two decimal places, making them easier to compare digit by digit.\n\nNext, compare the whole number parts. Both numbers have 9 as the whole number, so they are equal there. Then move to the tenths place: 1 in 9.11 versus 8 in 9.80. Since 1 is less than 8, that means 9.11 is actually smaller than 9.8.\n\nWait, but maybe the user is thinking of 9.8 as 9.08? That's a common mistake. I should address that possibility. If 9.8 were 9.08, then 9.11 would be larger. However, 9.8 is the same as 9.80, not 9.08. So, clarifying that point is important to avoid confusion.\n\nAlso, maybe the user is not familiar with decimal place values. So, breaking it down step by step would help. Emphasize that 0.8 is equivalent to 0.80, and comparing the tenths and hundredths places accordingly.\n\nAnother way to look at it is converting both numbers to fractions. 9.11 is 9 + 11/100, and 9.8 is 9 + 80/100. Comparing 11/100 and 80/100 shows clearly that 80/100 is larger, so 9.8 is bigger.\n\nI should also mention that sometimes people might misread 9.8 as 9.08, especially if they're not careful with decimal places. But in reality, 9.8 is nine and eight tenths, which is more than nine and eleven hundredths.\n\nSo putting it all together, the answer is that 9.8 is larger than 9.11. But the key is explaining the comparison clearly, addressing potential misunderstandings, and confirming why 9.8 is indeed the bigger number.",
-                "role": "assistant"
-                }
-        }
-    ], 
-    "created": 1741251025, 
-    "id": "9913e970-0d5d-4ac1-9620-438ce9edfa4e", 
-    "model": "deepseek-reasoner", 
-    "object": "chat.completion", 
-    "system_fingerprint": "fp_5417b77867_prod0225", 
-    "usage": {
-        "completion_tokens": 814, 
-        "completion_tokens_details": {"reasoning_tokens": 515}, 
-        "prompt_cache_hit_tokens": 0, 
-        "prompt_cache_miss_tokens": 43, 
-        "prompt_tokens": 43,
-        "prompt_tokens_details": {"cached_tokens": 0}, 
-        "total_tokens": 857
-        }
-}
-        "#;
+
 
 mod test {
+    #[cfg(test)]
     use crate::api;
-    use super::SAMPLE_JSON;
+    #[allow(dead_code)]
+    const SAMPLE_JSON: &str = r#"{
+        "choices": [{
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+                    "content": "**9.8 is bigger than 9.11.**\n\n### Explanation:\n1. **Compare the whole numbers first:**  \n   Both numbers have the same whole number part (**9**), so we compare the decimals.\n\n2. **Equalize decimal places for clarity:**  \n   - \\( 9.8 = 9.80 \\) (adding a zero to match two decimal places).  \n   - Now compare **9.80** vs. **9.11**.\n\n3. **Compare tenths place:**  \n   - \\( 8 \\) (in 9.80) is greater than \\( 1 \\) (in 9.11).  \n   - **No need to check further digits** once a larger digit is found.\n\n### Why this works:\n- **Decimal places matter:**  \n  \\( 9.8 = 9 + \\frac{8}{10} \\), while \\( 9.11 = 9 + \\frac{11}{100} \\).  \n  Since \\( \\frac{8}{10} = \\frac{80}{100} \\), \\( 80/100 > 11/100 \\).\n\n### Common confusion:\n- If \\( 9.8 \\) were mistakenly written as \\( 9.08 \\), then \\( 9.11 \\) would be larger. But \\( 9.8 \\) is **not** \\( 9.08 \\).  \n\nLet me know if you'd like further clarification! 😊", 
+                    "reasoning_content": "Okay, the user is asking which number is bigger between 9.11 and 9.8. Let me think about how to approach this.\n\nFirst, I know that comparing decimals can sometimes be tricky because of the different number of decimal places. The user might be confused by the two digits after the decimal in 9.11 versus the single digit in 9.8. \n\nI should start by explaining that to compare them, it's helpful to make sure both numbers have the same number of decimal places. So, 9.8 can be written as 9.80. That way, both numbers have two decimal places, making them easier to compare digit by digit.\n\nNext, compare the whole number parts. Both numbers have 9 as the whole number, so they are equal there. Then move to the tenths place: 1 in 9.11 versus 8 in 9.80. Since 1 is less than 8, that means 9.11 is actually smaller than 9.8.\n\nWait, but maybe the user is thinking of 9.8 as 9.08? That's a common mistake. I should address that possibility. If 9.8 were 9.08, then 9.11 would be larger. However, 9.8 is the same as 9.80, not 9.08. So, clarifying that point is important to avoid confusion.\n\nAlso, maybe the user is not familiar with decimal place values. So, breaking it down step by step would help. Emphasize that 0.8 is equivalent to 0.80, and comparing the tenths and hundredths places accordingly.\n\nAnother way to look at it is converting both numbers to fractions. 9.11 is 9 + 11/100, and 9.8 is 9 + 80/100. Comparing 11/100 and 80/100 shows clearly that 80/100 is larger, so 9.8 is bigger.\n\nI should also mention that sometimes people might misread 9.8 as 9.08, especially if they're not careful with decimal places. But in reality, 9.8 is nine and eight tenths, which is more than nine and eleven hundredths.\n\nSo putting it all together, the answer is that 9.8 is larger than 9.11. But the key is explaining the comparison clearly, addressing potential misunderstandings, and confirming why 9.8 is indeed the bigger number.",
+                    "role": "assistant"
+                    }
+            }
+        ], 
+        "created": 1741251025, 
+        "id": "9913e970-0d5d-4ac1-9620-438ce9edfa4e", 
+        "model": "deepseek-reasoner", 
+        "object": "chat.completion", 
+        "system_fingerprint": "fp_5417b77867_prod0225", 
+        "usage": {
+            "completion_tokens": 814, 
+            "completion_tokens_details": {"reasoning_tokens": 515}, 
+            "prompt_cache_hit_tokens": 0, 
+            "prompt_cache_miss_tokens": 43, 
+            "prompt_tokens": 43,
+            "prompt_tokens_details": {"cached_tokens": 0}, 
+            "total_tokens": 857
+            }
+    }
+            "#;
 
     #[tokio::test]
     async fn test_deepseek_ai() {

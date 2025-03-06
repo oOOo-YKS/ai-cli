@@ -7,6 +7,7 @@ pub enum Message {
     Assistant(String),
 }
 
+#[derive(Debug, Clone)]
 pub struct Conversation {
     messages: Vec<Message>,
 }
@@ -92,6 +93,19 @@ impl Conversation {
                 })
             }
         }).collect()
+    }
+
+    pub fn to_markdown(&self, filename:String) -> String {
+        let mut markdown = String::new();
+        markdown.push_str(format!("# {}\n\n", filename).as_str());
+        for message in &self.messages {
+            match message {
+                Message::System(text) => markdown.push_str(&format!("---\n### System\n---\n{}\n\n", text)),
+                Message::User(text) => markdown.push_str(&format!("---\n### User\n---\n{}\n\n", text)),
+                Message::Assistant(text) => markdown.push_str(&format!("---\n### Assistant\n---\n{}\n\n", text)),
+            }
+        }
+        markdown
     }
 }
 

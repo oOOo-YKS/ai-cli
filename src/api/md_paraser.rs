@@ -127,6 +127,7 @@ mod test {
         print!("{}", new_string);
     }
 
+    #[allow(dead_code)]
     const TEST_MARKDOWN: &str = r#"
 # sample
 

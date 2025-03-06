@@ -1,35 +1,41 @@
-mod ai;
-mod conversation;
-mod md_parser;
-
-use ai::DeepseekAi;
-use anyhow;
-use conversation::{Message, Messages};
-use md_parser::{MdParser};
+use ai_cli::api::ai::DeepseekAi;
+use ai_cli::api::setter::{ write_deepseek_api, check_file , read_resume_file, write_resume_file, read_deepseek_api};
+use ai_cli::api::md_paraser::parse_markdown_file;
 use std::env;
-use std::fs::File;
-use std::io::{self, Write};
+use std::io::Write;
 use std::process;
 
-const HELP_TEXT: &str = "\
-MD Creator - A tool for creating and managing Markdown files
-
-USAGE:
-    md-creator [COMMAND] [ARGS]
+const HELP_TEXT: &str = r#"
+ai-cli - A CLI tool help you chat with Deepseek AI and save the conversation to a Markdown file
 
 COMMANDS:
-    create <filename>     Create a new Markdown file
-    parse <filename>      Parse an existing Markdown file
-    chat <filename>       Start a chat session and save to file
-    help                 Show this help message
+    key <api_key>           Set the Deepseek API key
+    set <filename>          Create a new Markdown filet to chat in or use an existing one
+    chat                    get a response from Deepseek AI and save the conversation to the Markdown file
+    help                    Show this help message
 
 EXAMPLES:
-    md-creator create notes.md
-    md-creator parse conversation.md
-    md-creator chat new_chat.md";
+    ai-cli set chat.md
+    ai-cli key <api_key>
+    ai-cli chat
+
+"#;
+
+const SAMPLE_MARKDOWN: &str = r#"
+
+---
+### System
+---
+You are a helper assistant
+
+---
+### User
+---
+"#;
 
 #[tokio::main]
 async fn main() {
+    check_file();
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
@@ -37,21 +43,36 @@ async fn main() {
     }
 
     match args[1].as_str() {
-        "create" => {
-            if args.len() != 3 {
-                eprintln!("Usage: {} create <filename>", args[0]);
-                process::exit(1);
+        "set" => {
+            if args.len() < 3 {
+                eprintln!("Missing <chat_file> argument");
+                print_help_and_exit();
             }
             create_markdown_file(&args[2]);
         }
-        "chat" => {
-            if args.len() != 3 {
-                eprintln!("Usage: {} chat <filename>", args[0]);
-                process::exit(1);
+        "key" => {
+            if args.len() < 3 {
+                eprintln!("Missing <api_key> argument");
+                print_help_and_exit();
             }
-            if let Err(e) = chat_session(&args[2]).await {
-                eprintln!("Error in chat session: {}", e);
-                process::exit(1);
+            write_deepseek_api(&args[2]);
+        }
+        "chat" => {
+            let api_key = read_deepseek_api();
+            let ai = DeepseekAi::new(api_key);
+            let filename = read_resume_file();
+            let mut conversation = parse_markdown_file(&filename).unwrap();
+            print!("Starting chat session with Deepseek AI...\n\n");
+            print!("{}", conversation.to_markdown(filename.clone()));
+            match ai.chat(conversation.clone()).await {
+                Ok(ai_message) => {
+                    conversation.add_message(ai_message.clone());
+                    let markdown = conversation.to_markdown(filename.clone());
+                    overwrite_markdown_file(&filename, markdown);
+                }
+                Err(e) => {
+                    eprintln!("Error during chat session: {}", e);
+                }
             }
         }
         "help" | "-h" | "--help" => {
@@ -70,95 +91,61 @@ fn print_help_and_exit() {
 }
 
 fn create_markdown_file(filename: &str) {
+    let mut filename = filename.to_string();
+
     if !filename.ends_with(".md") {
-        let new_filename = filename.to_string() + ".md";
-        match File::create(&new_filename) {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("Error creating file: {}", e);
-                process::exit(1);
+        filename.push_str(".md");
+    }
+
+    use std::fs::OpenOptions;
+    // if file exists, ignore create
+    match OpenOptions::new()
+        .write(true)
+        .create_new(true) // create_new will ensure the file is created only if it does not exist
+        .open(&filename)
+    {
+        Ok(mut file) => {
+            let mut content = format!("# {}\n\n", filename);
+            content.push_str(SAMPLE_MARKDOWN);
+            if let Err(e) = file.write_all(content.as_bytes()) {
+                eprintln!("Failed to write to file {}: {}", filename, e);
+            } else {
+                println!("File {} created successfully.", filename);
             }
-        };
-        println!("✅ Created new Markdown file: {}", new_filename);
-        return;
-    }
-    let mut file = match File::create(filename) {
-        Ok(file) => file,
-        Err(e) => {
-            eprintln!("Error creating file: {}", e);
-            process::exit(1);
         }
-    };
-
-    // Write default template
-    let template = format!("# {}\n\n## System\n\n", 
-        filename.trim_end_matches(".md"));
-
-    if let Err(e) = file.write_all(template.as_bytes()) {
-        eprintln!("Error writing to file: {}", e);
-        process::exit(1);
+        Err(ref error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            println!("File {} found in this directory, please chat in this file", filename);
+        }
+        Err(e) => {
+            eprintln!("Failed to create file {}: {}", filename, e);
+        }
     }
-
-    println!("✅ Created new Markdown file: {}", filename);
+    write_resume_file(&filename);
 }
 
-async fn chat_session(filename: &str) -> anyhow::Result<()> {
-    let mut ai = DeepseekAi::new(
-        "https://api.deepseek.com/chat/completions".to_string(),
-        std::env::var("DEEPSEEK_API_KEY")
-            .map_err(|_| anyhow::anyhow!("DEEPSEEK_API_KEY environment variable not set"))?,
-    );
+fn overwrite_markdown_file(filename: &str, content: String) {
+    let mut filename = filename.to_string();
 
-    println!("Starting chat session (type 'exit' to end)");
-    let mut messages = Messages::new();
-    messages.system("You are a helpful assistant.");
-    ai.set_messages(messages);
-
-    loop {
-        print!("> ");
-        io::stdout().flush()?;
-
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
-
-        let input = input.trim();
-        if input.eq_ignore_ascii_case("exit") {
-            break;
-        }
-
-        println!();
-        ai.user_message(input);
-        ai.chat().await?;
-
-        // Print AI's response
-        if let Some(Message::Agent(response)) = ai.get_messages().get_conversation().last() {
-            println!("🤖 {}\n", response);
-        }
+    if !filename.ends_with(".md") {
+        filename.push_str(".md");
     }
 
-    // Save conversation to file
-    let mut file = File::create(filename)?;
-    writeln!(file, "# Chat Session\n")?;
-    writeln!(file, "## System\nYou are a helpful assistant.\n")?;
-
-    let conversation = ai.get_messages().get_conversation();
-    let mut message_count = 1;
-
-    for message in conversation {
-        match message {
-            Message::System(content) => {
-                writeln!(file, "## System\n{}\n", content)?;
-            }
-            Message::User(content) => {
-                writeln!(file, "## User-{}\n{}\n", message_count, content)?;
-                message_count += 1;
-            }
-            Message::Agent(content) => {
-                writeln!(file, "## AI-{}\n{}\n", message_count - 1, content)?;
+    use std::fs::OpenOptions;
+    // overwrite the file with content anyway
+    match OpenOptions::new()
+        .write(true)
+        .truncate(true) // truncate will ensure the file is overwritten
+        .open(&filename)
+    {
+        Ok(mut file) => {
+            if let Err(e) = file.write_all(content.as_bytes()) {
+                eprintln!("Failed to write to file {}: {}", filename, e);
+            } else {
+                println!("File {} overwritten successfully.", filename);
             }
         }
+        Err(e) => {
+            eprintln!("Failed to open file {}: {}", filename, e);
+        }
     }
-
-    println!("Chat session saved to: {}", filename);
-    Ok(())
 }

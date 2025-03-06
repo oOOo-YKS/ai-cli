@@ -81,7 +81,6 @@ pub fn write_resume_file(resume_file: &str) {
         }
     }
 
-    println!("{}", new_contents);
     match fs::write(file_path, new_contents) {
         Ok(_) => println!("RESUME_FILE updated successfully."),
         Err(e) => println!("Failed to update RESUME_FILE: {}", e),
@@ -118,14 +117,10 @@ pub fn check_file() {
             Ok(_) => println!("File 'setting.ai' created successfully."),
             Err(e) => println!("Failed to create file: {}", e),
         }
-    } else {
-        println!("File 'setting.ai' already exists.");
-    }
+    } 
 }
-
 mod test {
-    use std::ptr::eq;
-
+    #[allow(unused_imports)]
     use super::*;
 
     #[test]
