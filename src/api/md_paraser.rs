@@ -91,6 +91,29 @@ impl MarkdownScanner {
     fn finalize(&mut self) {
         self.push_message();
     }
+
+    fn to_conversation(&self) -> Conversation {
+        let mut result = Conversation::new(self.messages[0].clone());
+        for message in &self.messages[1..] {
+            match message {
+                Message::System(text) => result.system(text.clone()).unwrap(),
+                Message::User(text) | Message::Assistant(text) => result.auto_add(text.clone()),
+            }
+        }
+        result
+    }
+}
+
+pub fn parse_markdown_file(file_path: &str) -> Result<Conversation, io::Error> {
+    let mut file = File::open(file_path)?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+    let mut scanner = MarkdownScanner::new();
+    for line in contents.lines() {
+        scanner.scan(line);
+    }
+    scanner.finalize();
+    Ok(scanner.to_conversation())
 }
 
 mod test {
@@ -133,5 +156,13 @@ how can i help you today
         scanner.finalize();
         print!("{:?}", scanner.messages);
         assert_eq!(scanner.messages.len(), 3);
+    }
+
+    #[test]
+    fn test_parse_markdown_file() {
+        let conversation = super::parse_markdown_file("chat.md").unwrap();
+        let messages = conversation.to_messages();
+        print!("{:?}", messages);
+        assert!(!messages.is_empty());
     }
 }

@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::Path;
 
-fn read_deepseek_api() -> String {
+pub fn read_deepseek_api() -> String {
     let file_path = "setting.ai";
     match fs::read_to_string(file_path) {
         Ok(contents) => {
@@ -23,7 +23,7 @@ fn read_deepseek_api() -> String {
     }
 }
 
-fn write_deepseek_api(api_key: &str) {
+pub fn write_deepseek_api(api_key: &str) {
     let file_path = "setting.ai";
     let mut new_contents = String::new();
     let mut found = false;
@@ -55,7 +55,7 @@ fn write_deepseek_api(api_key: &str) {
     }
 }
 
-fn write_resume_file(resume_file: &str) {
+pub fn write_resume_file(resume_file: &str) {
     let file_path = "setting.ai";
     let mut new_contents = String::new();
     let mut found = false;
@@ -88,7 +88,7 @@ fn write_resume_file(resume_file: &str) {
     }
 }
 
-fn read_resume_file() -> String {
+pub fn read_resume_file() -> String {
     let file_path = "setting.ai";
     match fs::read_to_string(file_path) {
         Ok(contents) => {
@@ -110,7 +110,7 @@ fn read_resume_file() -> String {
     }
 }
 
-fn check_file() {
+pub fn check_file() {
     let file_path = "setting.ai";
     let file_content = "DEEPSEEK_API=To_BE_FILLED_BY_PROGRAM\nRESUME_FILE=To_BE_FILLED_BY_PROGRAM\n";
     if !Path::new(file_path).exists() {

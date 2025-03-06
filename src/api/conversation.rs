@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use serde_json::json;
+
+#[derive(Debug, Clone)]
 pub enum Message {
     System(String),
     User(String),
@@ -73,18 +75,23 @@ impl Conversation {
         }
     }
 
-    pub fn to_string(&self) -> String {
-        let mut result = String::new();
-        result.push_str(&format!("{{\"messages\":["));
-        for message in &self.messages {
-            match message {
-                Message::System(text) => result.push_str(&format!("{{\"content\":\"{}\",\"role\":\"system\"}}", text)),
-                Message::User(text) => result.push_str(&format!(",{{\"content\":\"{}\",\"role\":\"user\"}}", text)),
-                Message::Assistant(text) => result.push_str(&format!(",{{\"content\":\"{}\",\"role\":\"assistant\"}}", text)),
+    pub fn to_messages(&self) -> Vec<serde_json::Value> {
+        self.messages.iter().map(|msg| {
+            match msg {
+                Message::System(text) => json!({
+                    "content": text,
+                    "role": "system"
+                }),
+                Message::User(text) => json!({
+                    "content": text,
+                    "role": "user"
+                }),
+                Message::Assistant(text) => json!({
+                    "content": text,
+                    "role": "assistant"
+                })
             }
-        }
-        result.push_str("]}");
-        result
+        }).collect()
     }
 }
 
@@ -94,16 +101,18 @@ mod test {
 
     #[test]
     fn test_conversation() {
-        let sys_message = Message::System("Your are a helpful assistant".to_string());
+        let sys_message = Message::System("You are a helpful assistant".to_string());
         let conversation = Conversation::new(sys_message);
         assert_eq!(conversation.messages.len(), 1);
     }
 
     #[test]
-    fn test_conversation_to_string() {
-        let sys_message = Message::System("Your are a helpful assistant".to_string());
+    fn test_conversation_messages() {
+        let sys_message = Message::System("You are a helpful assistant".to_string());
         let conversation = Conversation::new(sys_message);
-        println!("{}", conversation.to_string());
-        assert_eq!(conversation.to_string(), "{\"messages\":[{\"content\":\"Your are a helpful assistant\",\"role\":\"system\"}]}");
+        let messages = conversation.to_messages();
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0]["role"], "system");
+        assert_eq!(messages[0]["content"], "You are a helpful assistant");
     }
 }
